@@ -15,6 +15,8 @@ public class PlayerAttack : MonoBehaviour
 
     private bool _isAiming = false;
 
+    private TargetMark _target;
+
     private void OnEnable()
     {
         _playerControlls.Enable();
@@ -27,13 +29,12 @@ public class PlayerAttack : MonoBehaviour
     {
         _photonView = GetComponent<PhotonView>();
         _playerControlls = new PlayerControlls();
+
         if (_photonView.IsMine)
         {
-
             _playerControlls.KeyboardControlls.Aim.started += OnAimChanged;
             _playerControlls.KeyboardControlls.Aim.canceled += OnAimChanged;
             _playerControlls.KeyboardControlls.Fire.started += OnShoot;
-
         }
 
     }
@@ -52,6 +53,12 @@ public class PlayerAttack : MonoBehaviour
     {
         _isAiming = context.ReadValueAsButton();
         _trailTransform.gameObject.SetActive(_isAiming);
+
+        if (_target != null && _isAiming == false)
+        {
+            _target.GetComponent<MeshRenderer>().enabled = false;
+            Debug.Log("ldfgekgfru");
+        }
     }
 
     private void OnShoot(InputAction.CallbackContext context)
@@ -75,15 +82,27 @@ public class PlayerAttack : MonoBehaviour
 
             }
         }
-
-        RaycastHit[] raycastHits = Physics.RaycastAll(_trailTransform.position + _trailTransform.forward, _trailTransform.forward, 8.0f);
-
-        foreach(RaycastHit hit in raycastHits)
+       
+        if (Physics.Raycast(_trailTransform.position, _trailTransform.forward, out RaycastHit hit, 8.0f))
         {
             if(hit.collider.TryGetComponent(out TargetMark targetMark))
             {
-                targetMark.IsTarget = true;
+                if (_target != targetMark && _target != null)
+                {
+                    _target.GetComponent<MeshRenderer>().enabled = false;
+                }
+
+                _target = targetMark;
+                _target.GetComponent<MeshRenderer>().enabled = true;
             }
+            else if (_target != null)
+            {
+                _target.GetComponent<MeshRenderer>().enabled = false;
+            }
+        }
+        else if (_target != null)
+        {
+            _target.GetComponent<MeshRenderer>().enabled = false;
         }
     }
 
